@@ -134,7 +134,7 @@ describe('The Maybe', () => {
 
       const result = maybe.fold(
         () => 'none',
-        (x) => `value: ${x}`,
+        (x) => `value: ${x}`
       );
 
       expect(result).toBe('value: 42');
@@ -145,7 +145,7 @@ describe('The Maybe', () => {
 
       const result = maybe.fold(
         () => 'none',
-        (x) => `value: ${x}`,
+        (x) => `value: ${x}`
       );
 
       expect(result).toBe('none');
