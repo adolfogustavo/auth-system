@@ -1,13 +1,17 @@
 import { Collection, Db } from 'mongodb';
+import { Maybe } from '../../../shared/domain/Maybe';
+import { Id } from '../../../shared/domain/value-objects/Id';
 import { User } from '../../domain/entities/User';
 import { UserRepository } from '../../domain/repositories/UserRepository';
 import { Email } from '../../domain/value-objects/Email';
-import { Id } from '../../../shared/domain/value-objects/Id';
-import { Maybe } from '../../../shared/domain/Maybe';
 
 interface UserDocument {
   _id: string;
   email: string;
+  createdAt: string;
+  name: string | null;
+  lastName: string | null;
+  phone: string | null;
 }
 
 export class MongoUserRepository implements UserRepository {
@@ -20,6 +24,16 @@ export class MongoUserRepository implements UserRepository {
   async save(user: User): Promise<void> {
     const document = this.toDocument(user);
     await this.collection.updateOne({ _id: document._id }, { $set: document }, { upsert: true });
+  }
+
+  async update(user: User): Promise<void> {
+    const document = this.toDocument(user);
+    await this.collection.updateOne({ _id: document._id }, { $set: document });
+  }
+
+  async findById(id: Id): Promise<Maybe<User>> {
+    const document = await this.collection.findOne({ _id: id.value });
+    return Maybe.fromNullable(document).map((doc) => this.toDomain(doc));
   }
 
   async findByEmail(email: Email): Promise<Maybe<User>> {
@@ -37,10 +51,21 @@ export class MongoUserRepository implements UserRepository {
     return {
       _id: primitives.id,
       email: primitives.email,
+      createdAt: primitives.createdAt,
+      name: primitives.name,
+      lastName: primitives.lastName,
+      phone: primitives.phone,
     };
   }
 
   private toDomain(document: UserDocument): User {
-    return User.create(Id.create(document._id), Email.create(document.email));
+    return User.fromPrimitives({
+      id: document._id,
+      email: document.email,
+      createdAt: document.createdAt,
+      name: document.name,
+      lastName: document.lastName,
+      phone: document.phone,
+    });
   }
 }
