@@ -3,3 +3,6 @@ lib
 .idea
 coverage
 .DS_Store
+
+.env
+.env.docker.local
