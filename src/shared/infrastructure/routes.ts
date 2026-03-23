@@ -3,4 +3,5 @@ export enum Routes {
   AuthRegister = '/auth/register',
   AuthLogin = '/auth/login',
   AuthVerify = '/auth/verify',
+  Profile = '/profile',
 }

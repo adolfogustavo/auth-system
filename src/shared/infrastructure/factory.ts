@@ -12,8 +12,11 @@ import { JwtTokenService } from '../../auth/infrastructure/adapters/JwtTokenServ
 import { OtpGenerator } from '../../auth/domain/services/OtpGenerator';
 import { RegisterUserUseCase } from '../../auth/application/RegisterUserUseCase';
 import { RequestOtpUseCase } from '../../auth/application/RequestOtpUseCase';
+import { UpdateUserProfileUseCase } from '../../auth/application/UpdateUserProfileUseCase';
 import { VerifyOtpUseCase } from '../../auth/application/VerifyOtpUseCase';
 import { AuthController } from '../../auth/infrastructure/http/AuthController';
+import { createAuthMiddleware } from '../../auth/infrastructure/http/AuthMiddleware';
+import { ProfileController } from '../../auth/infrastructure/http/ProfileController';
 import { OtpSender } from '../../auth/application/ports/OtpSender';
 import { TokenService } from '../../auth/application/ports/TokenService';
 import { Logger } from '../application/ports/Logger';
@@ -115,6 +118,10 @@ export class Factory {
     return new VerifyOtpUseCase(this.getOtpSessionRepository(), this.getTokenService());
   }
 
+  static createUpdateUserProfileUseCase(): UpdateUserProfileUseCase {
+    return new UpdateUserProfileUseCase(this.getUserRepository());
+  }
+
   static createAuthController(): AuthController {
     return new AuthController(
       this.createRegisterUserUseCase(),
@@ -122,5 +129,13 @@ export class Factory {
       this.createVerifyOtpUseCase(),
       this.getLogger()
     );
+  }
+
+  static createProfileController(): ProfileController {
+    return new ProfileController(this.createUpdateUserProfileUseCase(), this.getLogger());
+  }
+
+  static createAuthMiddleware() {
+    return createAuthMiddleware(this.getTokenService());
   }
 }
