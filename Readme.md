@@ -1,14 +1,4 @@
-<div align="center">
-<br/>
-
-<img src="https://swcrafters.fra1.digitaloceanspaces.com/Assets/Logo_software_crafters.png" alt="Software Crafters" width="200" />
-
-### Mentoría de [Software Crafters®](https://softwarecrafters.io/mentoria)
-<br/>
-</div>
-
-
-# Backend Template
+# Auth System
 
 [![Node.js](https://img.shields.io/badge/Node.js-24-339933.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6.svg)](https://www.typescriptlang.org/)
@@ -16,30 +6,94 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248.svg)](https://www.mongodb.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+Authentication system with OTP-based login and JWT tokens, built with hexagonal architecture.
 
+## Features
 
-Production-ready backend template with hexagonal architecture.
+- User registration with email
+- OTP-based login (6-digit code sent to console)
+- JWT token generation (HS256, 24h expiration)
+- Rate limiting: 3 failed OTP attempts triggers 10-minute lockout
+- OTP validity: 5 minutes
 
 ## Stack
 
 - Node.js 24 / TypeScript 5.9
 - Express 5
 - MongoDB 7
+- JSON Web Tokens (jsonwebtoken)
 - Pino (structured logging)
 - Jest (unit, integration, e2e)
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/auth/register` | Register a new user with email |
+| `POST` | `/auth/login` | Request OTP for registered email |
+| `POST` | `/auth/verify` | Verify OTP and receive JWT |
+| `GET` | `/health` | Health check |
+
+### Request/Response Examples
+
+**Register**
+```bash
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+
+# Response: 201 Created
+# {"id": "uuid", "email": "user@example.com"}
+```
+
+**Login (Request OTP)**
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+
+# Response: 200 OK
+# {"message": "OTP sent"}
+# Check server console for OTP: "OTP for user@example.com: 123456"
+```
+
+**Verify OTP**
+```bash
+curl -X POST http://localhost:3000/auth/verify \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "otp": "123456"}'
+
+# Response: 200 OK
+# {"token": "eyJhbGciOiJIUzI1NiIs..."}
+```
 
 ## Architecture
 
 ```
 src/
-├── main.ts                      # Entry point
-├── health/                      # Example module
-│   ├── domain/                  # Entities, value objects, repositories
-│   ├── application/             # Use cases
-│   └── infrastructure/          # Adapters (MongoDB, HTTP)
+├── main.ts
+├── auth/                        # Auth module
+│   ├── domain/
+│   │   ├── entities/            # User, OtpSession
+│   │   ├── value-objects/       # Email, Otp, Token
+│   │   ├── services/            # OtpGenerator
+│   │   └── repositories/        # UserRepository, OtpSessionRepository
+│   ├── application/
+│   │   ├── RegisterUserUseCase.ts
+│   │   ├── RequestOtpUseCase.ts
+│   │   ├── VerifyOtpUseCase.ts
+│   │   └── ports/               # OtpSender, TokenService
+│   ├── infrastructure/
+│   │   ├── adapters/            # Mongo repos, ConsoleOtpSender, JwtTokenService
+│   │   └── http/                # AuthController
+│   └── tests/
+│       ├── unit/
+│       ├── integration/
+│       └── e2e/
+├── health/                      # Health check module
 └── shared/
-    ├── domain/                  # DomainError, value objects
-    ├── application/ports/       # Logger port
+    ├── domain/                  # DomainError, Maybe, Id
+    ├── application/ports/       # Logger
     └── infrastructure/          # Factory, server, adapters
 ```
 
@@ -48,9 +102,10 @@ src/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
+| `NODE_ENV` | - | Set to `development` for pretty logs |
 | `MONGO_URI` | - | MongoDB connection string (required) |
-| `JWT_SECRET` | - | Secret key used to sign JWT tokens (required) |
-| `LOG_LEVEL` | `info` | Pino log level (debug, info, warn, error, silent) |
+| `JWT_SECRET` | - | Secret key for signing JWT tokens (required) |
+| `LOG_LEVEL` | `info` | Pino log level |
 
 ## Quick Start
 
@@ -62,6 +117,7 @@ npm install
 
 # Configure
 cp .env.example .env
+# Edit .env and set MONGO_URI and JWT_SECRET
 
 # Run (development)
 npm start
@@ -70,12 +126,12 @@ npm start
 ## Docker
 
 ```bash
-docker build -t backend-template .
-cp .env.docker .env.docker.local # opcional: personaliza JWT_SECRET o URI
-docker run --rm -p 3000:3000 --env-file .env.docker.local backend-template
+docker build -t auth-system .
+cp .env.docker .env.docker.local
+docker run --rm -p 3000:3000 --env-file .env.docker.local auth-system
 ```
 
-If MongoDB is not running on your host machine, start one first:
+If MongoDB is not running on your host machine:
 
 ```bash
 docker run -d --name mongo -p 27017:27017 mongo:7
@@ -95,28 +151,22 @@ docker run -d --name mongo -p 27017:27017 mongo:7
 
 ## Testing
 
-Tests are colocated with the module they test:
+Tests are colocated with each module:
 
 ```
 module/tests/
-├── unit/           # Domain + UseCase tests (no dependencies)
+├── unit/           # Domain + UseCase tests (InMemoryRepositories)
 ├── integration/    # Adapter tests (real MongoDB)
 └── e2e/            # HTTP endpoint tests (full stack)
 ```
 
-## Domain Utilities
-
-- **Maybe\<T\>** - Monadic type for optional values (replaces `| undefined`)
-- **DomainError** - Single error class with factory methods (`createNotFound`, `createValidation`)
-- **Id** - Value object for entity identifiers
-
 ## Development Rules
 
-Architecture and coding standards are defined in `.cursor/rules/`. Key principles:
+Architecture and coding standards are defined in `.cursor/rules/`:
 
 - Hexagonal architecture with vertical slicing
 - TDD with inside-out approach
-- No mocks policy in tests
+- No mocks policy (use InMemory implementations)
 - Maybe instead of `| undefined`
 
 ## License
