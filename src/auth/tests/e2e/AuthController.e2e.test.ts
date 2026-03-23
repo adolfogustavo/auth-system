@@ -3,6 +3,8 @@ import { createServer } from '../../../shared/infrastructure/server';
 import { Factory } from '../../../shared/infrastructure/factory';
 import { createTestMongo } from '../../../shared/tests/mongoTestHelper';
 import { Routes } from '../../../shared/infrastructure/routes';
+import { JwtTokenService } from '../../infrastructure/adapters/JwtTokenService';
+import { Email } from '../../domain/value-objects/Email';
 
 describe('Auth Flow', () => {
   let mongo: Awaited<ReturnType<typeof createTestMongo>>;
@@ -82,6 +84,52 @@ describe('Auth Flow', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Invalid OTP');
+    });
+  });
+
+  describe('PUT /profile', () => {
+    const issueTokenForEmail = (emailValue: string): string => {
+      const secret = process.env.JWT_SECRET as string;
+      const tokenService = new JwtTokenService(secret);
+      return tokenService.generate(Email.create(emailValue)).value;
+    };
+
+    beforeEach(async () => {
+      await request(server).post(Routes.AuthRegister).send({ email: 'user@example.com' });
+    });
+
+    it('rejects body with unexpected fields', async () => {
+      const token = issueTokenForEmail('user@example.com');
+
+      const response = await request(server)
+        .put(Routes.Profile)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'John', extraField: 'no' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Unexpected fields: extraField');
+    });
+
+    it('rejects empty body', async () => {
+      const token = issueTokenForEmail('user@example.com');
+
+      const response = await request(server).put(Routes.Profile).set('Authorization', `Bearer ${token}`).send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('At least one of name, lastName, or phone is required');
+    });
+
+    it('updates profile with valid body', async () => {
+      const token = issueTokenForEmail('user@example.com');
+
+      const response = await request(server)
+        .put(Routes.Profile)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Jane' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.name).toBe('Jane');
+      expect(response.body.email).toBe('user@example.com');
     });
   });
 });
