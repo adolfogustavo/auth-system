@@ -49,6 +49,7 @@ src/
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
 | `MONGO_URI` | - | MongoDB connection string (required) |
+| `JWT_SECRET` | - | Secret key used to sign JWT tokens (required) |
 | `LOG_LEVEL` | `info` | Pino log level (debug, info, warn, error, silent) |
 
 ## Quick Start
@@ -70,7 +71,14 @@ npm start
 
 ```bash
 docker build -t backend-template .
-docker run -p 3000:3000 -e MONGO_URI=mongodb://host.docker.internal:27017/app backend-template
+cp .env.docker .env.docker.local # opcional: personaliza JWT_SECRET o URI
+docker run --rm -p 3000:3000 --env-file .env.docker.local backend-template
+```
+
+If MongoDB is not running on your host machine, start one first:
+
+```bash
+docker run -d --name mongo -p 27017:27017 mongo:7
 ```
 
 ## Scripts
