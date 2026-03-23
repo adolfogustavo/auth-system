@@ -1,0 +1,72 @@
+import { MongoUserRepository } from '../../infrastructure/adapters/MongoUserRepository';
+import { User } from '../../domain/entities/User';
+import { Email } from '../../domain/value-objects/Email';
+import { Id } from '../../../shared/domain/value-objects/Id';
+import { createTestMongo } from '../../../shared/tests/mongoTestHelper';
+
+describe('The MongoUserRepository', () => {
+  let mongo: Awaited<ReturnType<typeof createTestMongo>>;
+  let repository: MongoUserRepository;
+
+  beforeAll(async () => {
+    mongo = await createTestMongo();
+    repository = new MongoUserRepository(mongo.db());
+  });
+
+  afterAll(() => mongo.stop());
+  beforeEach(() => mongo.clean());
+
+  it('saves and finds a user by email', async () => {
+    const email = Email.create('user@example.com');
+    const user = User.create(Id.generate(), email);
+
+    await repository.save(user);
+    const retrieved = await repository.findByEmail(email);
+
+    expect(retrieved.isSome()).toBe(true);
+    expect(
+      retrieved.fold(
+        () => false,
+        (u) => u.equals(user)
+      )
+    ).toBe(true);
+  });
+
+  it('finds nothing when user does not exist', async () => {
+    const email = Email.create('nonexistent@example.com');
+
+    const retrieved = await repository.findByEmail(email);
+
+    expect(retrieved.isNone()).toBe(true);
+  });
+
+  it('checks if email exists', async () => {
+    const email = Email.create('user@example.com');
+    const user = User.create(Id.generate(), email);
+    await repository.save(user);
+
+    const exists = await repository.existsByEmail(email);
+    const notExists = await repository.existsByEmail(Email.create('other@example.com'));
+
+    expect(exists).toBe(true);
+    expect(notExists).toBe(false);
+  });
+
+  it('updates existing user', async () => {
+    const email = Email.create('user@example.com');
+    const id = Id.generate();
+    const user = User.create(id, email);
+    await repository.save(user);
+    await repository.save(user);
+
+    const retrieved = await repository.findByEmail(email);
+
+    expect(retrieved.isSome()).toBe(true);
+    expect(
+      retrieved.fold(
+        () => '',
+        (u) => u.id.value
+      )
+    ).toBe(id.value);
+  });
+});

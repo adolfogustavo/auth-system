@@ -1,6 +1,4 @@
-import dotenv from 'dotenv';
-dotenv.config({ quiet: true });
-
+import 'dotenv/config';
 import { createServer } from './shared/infrastructure/server';
 import { Factory } from './shared/infrastructure/factory';
 
