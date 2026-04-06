@@ -7,3 +7,4 @@ coverage
 .env
 .env.docker.local
 .cursor
+.vscode
