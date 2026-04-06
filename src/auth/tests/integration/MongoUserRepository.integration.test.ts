@@ -58,12 +58,12 @@ describe('The MongoUserRepository', () => {
     const id = Id.generate();
     const user = User.create(id, email, new Date('2026-01-01T10:00:00.000Z'));
     await repository.save(user);
-    const updatedUser = user.updateProfile({
+    user.updateProfile({
       name: 'John',
       lastName: 'Doe',
       phone: Phone.create('1234567890'),
     });
-    await repository.update(updatedUser);
+    await repository.update(user);
 
     const retrieved = await repository.findByEmail(email);
 
