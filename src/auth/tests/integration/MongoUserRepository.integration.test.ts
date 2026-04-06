@@ -66,20 +66,12 @@ describe('The MongoUserRepository', () => {
     await repository.update(user);
 
     const retrieved = await repository.findByEmail(email);
+    const foundUser = retrieved.getOrThrow(new Error('Expected user to be persisted'));
+    const foundPrimitives = foundUser.toPrimitives();
 
     expect(retrieved.isSome()).toBe(true);
-    expect(
-      retrieved.fold(
-        () => '',
-        (u) => u.id.value
-      )
-    ).toBe(id.value);
-    expect(
-      retrieved.fold(
-        () => '',
-        (u) => u.toPrimitives().name ?? ''
-      )
-    ).toBe('John');
+    expect(foundUser.id.value).toBe(id.value);
+    expect(foundPrimitives.name).toBe('John');
   });
 
   it('finds user by id', async () => {
