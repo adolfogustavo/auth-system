@@ -25,13 +25,13 @@ export class UpdateUserProfileUseCase {
   async execute(input: UpdateUserProfileInput): Promise<UpdateUserProfileOutput> {
     const user = await this.findUserByEmailOrFail(input.email);
     const phone = input.phone !== undefined ? Phone.create(input.phone) : undefined;
-    const updatedUser = user.updateProfile({
+    user.updateProfile({
       name: input.name,
       lastName: input.lastName,
       phone,
     });
-    await this.userRepository.update(updatedUser);
-    return updatedUser.toPrimitives();
+    await this.userRepository.update(user);
+    return user.toPrimitives();
   }
 
   private async findUserByEmailOrFail(emailValue: string) {

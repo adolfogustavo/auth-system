@@ -16,9 +16,9 @@ export class User {
     readonly id: Id,
     readonly email: Email,
     readonly createdAt: Date,
-    readonly name: string | null,
-    readonly lastName: string | null,
-    readonly phone: Phone | null
+    private name: string | null,
+    private lastName: string | null,
+    private phone: Phone | null
   ) {}
 
   static create(
@@ -44,11 +44,16 @@ export class User {
     );
   }
 
-  updateProfile(profile: { name?: string | null; lastName?: string | null; phone?: Phone | null }): User {
-    const nextName = profile.name !== undefined ? profile.name : this.name;
-    const nextLastName = profile.lastName !== undefined ? profile.lastName : this.lastName;
-    const nextPhone = profile.phone !== undefined ? profile.phone : this.phone;
-    return new User(this.id, this.email, this.createdAt, nextName, nextLastName, nextPhone);
+  updateProfile(profile: { name?: string | null; lastName?: string | null; phone?: Phone | null }): void {
+    if (profile.name !== undefined) {
+      this.name = profile.name;
+    }
+    if (profile.lastName !== undefined) {
+      this.lastName = profile.lastName;
+    }
+    if (profile.phone !== undefined) {
+      this.phone = profile.phone;
+    }
   }
 
   equals(other: User): boolean {

@@ -49,8 +49,8 @@ describe('The User', () => {
   it('updates only name in profile', () => {
     const user = User.create(Id.generate(), email, createdAt);
 
-    const updatedUser = user.updateProfile({ name: 'Jane' });
-    const primitives = updatedUser.toPrimitives();
+    user.updateProfile({ name: 'Jane' });
+    const primitives = user.toPrimitives();
 
     expect(primitives.name).toBe('Jane');
     expect(primitives.lastName).toBeNull();
@@ -60,8 +60,8 @@ describe('The User', () => {
   it('updates only phone in profile', () => {
     const user = User.create(Id.generate(), email, createdAt);
 
-    const updatedUser = user.updateProfile({ phone: Phone.create('1234567890') });
-    const primitives = updatedUser.toPrimitives();
+    user.updateProfile({ phone: Phone.create('1234567890') });
+    const primitives = user.toPrimitives();
 
     expect(primitives.phone).toBe('1234567890');
   });
@@ -69,12 +69,12 @@ describe('The User', () => {
   it('updates multiple fields in profile', () => {
     const user = User.create(Id.generate(), email, createdAt);
 
-    const updatedUser = user.updateProfile({
+    user.updateProfile({
       name: 'John',
       lastName: 'Doe',
       phone: Phone.create('1234567890'),
     });
-    const primitives = updatedUser.toPrimitives();
+    const primitives = user.toPrimitives();
 
     expect(primitives.name).toBe('John');
     expect(primitives.lastName).toBe('Doe');
@@ -84,8 +84,8 @@ describe('The User', () => {
   it('keeps non-updated fields', () => {
     const user = User.create(Id.generate(), email, createdAt, 'John', 'Doe', Phone.create('1234567890'));
 
-    const updatedUser = user.updateProfile({ name: 'Jane' });
-    const primitives = updatedUser.toPrimitives();
+    user.updateProfile({ name: 'Jane' });
+    const primitives = user.toPrimitives();
 
     expect(primitives.name).toBe('Jane');
     expect(primitives.lastName).toBe('Doe');
@@ -95,8 +95,8 @@ describe('The User', () => {
   it('keeps createdAt after update', () => {
     const user = User.create(Id.generate(), email, createdAt);
 
-    const updatedUser = user.updateProfile({ name: 'Jane' });
-    const primitives = updatedUser.toPrimitives();
+    user.updateProfile({ name: 'Jane' });
+    const primitives = user.toPrimitives();
 
     expect(primitives.createdAt).toBe(createdAt.toISOString());
   });
